@@ -92,15 +92,79 @@ size_t curl_get_image(const char *url, uint8_t **response) {
 }
 
 int main(void) {
-  const int tx = long2tilex(LNG, ZOOM);
-  const int ty = lat2tiley(LAT, ZOOM);
-  const char *url = create_url(tx, ty, ZOOM);
+  // const int tx = long2tilex(LNG, ZOOM);
+  // const int ty = lat2tiley(LAT, ZOOM);
+  // const char *url = create_url(tx, ty, ZOOM);
 
-  uint8_t *response = NULL;
-  size_t response_len = curl_get_image(url, &response);
+  // uint8_t *response = NULL;
+  // size_t response_len = curl_get_image(url, &response);
 
-  free(response);
-  response = NULL;
+  if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    fprintf(stderr, "[ERROR]: could not initialize sdl: %s\n", SDL_GetError());
+    return 1;
+  }
+
+  if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
+    fprintf(stderr, "[ERROR]: could not initialize sdl_image: %s\n", IMG_GetError());
+    SDL_Quit();
+    return 1;
+  }
+
+  // SDL_RWops *rw = SDL_RWFromConstMem(response, response_len);
+  const char *image_path = "image.png";
+
+  SDL_Window *window = SDL_CreateWindow("Map Viewer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
+  if (window == NULL) {
+    fprintf(stderr, "[ERROR]: could not create sdl window: %s\n", SDL_GetError());
+    SDL_Quit();
+    return 1;
+  }
+
+  SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+  if (renderer == NULL) {
+    fprintf(stderr, "[ERROR]: could not create sdl renderer: %s\n", SDL_GetError());
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return 1;
+  }
+
+  SDL_Surface *surface = IMG_Load(image_path); // 1 means SDL will free the RWops for us
+  if (surface == NULL) {
+    fprintf(stderr, "[ERROR]: could not load image %s: %s\n", image_path, IMG_GetError());
+    IMG_Quit();
+    SDL_Quit();
+    return 1;
+  }
+
+  SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
+  if (texture == NULL) {
+    fprintf(stderr, "[ERROR]: could not create texture from surface %s: %s", image_path, SDL_GetError());
+    return 1;
+  }
+
+  SDL_Event e;
+  bool quit = false;
+  while (!quit) {
+    while (SDL_PollEvent(&e) != 0) {
+      if (e.type == SDL_QUIT) {
+        quit = true;
+      }
+    }
+
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    SDL_RenderPresent(renderer);
+  }
+
+  // Cleanup
+  SDL_DestroyTexture(texture);
+  SDL_DestroyRenderer(renderer);
+  SDL_DestroyWindow(window);
+  IMG_Quit();
+  SDL_Quit();
+
+  // free(response);
+  // response = NULL;
 
   return 0;
 }
