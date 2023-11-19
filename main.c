@@ -8,39 +8,19 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define URL_BUF_SIZE 1024
+
 #define ZOOM 13
 #define LAT 24.719634
 #define LNG 46.624539
 #define WIDTH 800
 #define HEIGHT 800
 
-static char url[200] = "https://tile.openstreetmap.org/";
-
 static int long2tilex(double lon, int z) { return (int)(floor((lon + 180.0) / 360.0 * (1 << z))); }
 
 static int lat2tiley(double lat, int z) {
   double latrad = lat * M_PI / 180.0;
   return (int)(floor((1.0 - asinh(tan(latrad)) / M_PI) / 2.0 * (1 << z)));
-}
-
-static const char *create_url(int x, int y, int z) {
-  static const char base_url[] = "https://tile.openstreetmap.org/";
-  strcpy(url, base_url); // Reset the URL to base
-
-  static char zoom[5], x_str[10], y_str[10];
-
-  sprintf(zoom, "%d", z);
-  sprintf(x_str, "%d", x);
-  sprintf(y_str, "%d", y);
-
-  strcat(url, zoom);
-  strcat(url, "/");
-  strcat(url, x_str);
-  strcat(url, "/");
-  strcat(url, y_str);
-  strcat(url, ".png");
-
-  return url;
 }
 
 typedef struct {
@@ -101,13 +81,13 @@ static string curl_get_image(const char *url) {
 }
 
 int main(void) {
-  const int tx = long2tilex(LNG, ZOOM);
-  const int ty = lat2tiley(LAT, ZOOM);
-  const char *url = create_url(tx, ty, ZOOM);
+  const int tx = long2tilex(LNG, ZOOM); // convert longiture to tile x coordinate
+  const int ty = lat2tiley(LAT, ZOOM);  // convert latitude to tile y coordinate
+
+  char url[URL_BUF_SIZE];
+  snprintf(url, URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx, ty);
 
   string response = curl_get_image(url);
-
-  printf("response = %s", response.ptr);
 
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
     fprintf(stderr, "[ERROR]: could not initialize sdl: %s\n", SDL_GetError());
