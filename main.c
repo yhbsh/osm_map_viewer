@@ -12,7 +12,7 @@
 #define LAT 24.719634
 #define LNG 46.624539
 #define WIDTH 800
-#define HEIGHT 600
+#define HEIGHT 800
 
 static char url[200] = "https://tile.openstreetmap.org/";
 
