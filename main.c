@@ -16,6 +16,9 @@
 #define WIDTH 800
 #define HEIGHT 800
 
+SDL_Renderer *renderer = NULL;
+SDL_Texture *texture = NULL;
+
 static int long2tilex(double lon, int z) { return (int)(floor((lon + 180.0) / 360.0 * (1 << z))); }
 
 static int lat2tiley(double lat, int z) {
@@ -56,7 +59,7 @@ static size_t write_callback(void *data, size_t size, size_t nmemb, void *user_d
   return real_size;
 }
 
-static string curl_get_image(const char *url) {
+static string curl_get_png_data(const char *url) {
   CURL *curl = curl_easy_init();
 
   if (!curl) {
@@ -84,15 +87,7 @@ static string curl_get_image(const char *url) {
   return s;
 }
 
-int main(void) {
-  const int tx = long2tilex(LNG, ZOOM); // convert longiture to tile x coordinate
-  const int ty = lat2tiley(LAT, ZOOM);  // convert latitude to tile y coordinate
-
-  char url[URL_BUF_SIZE];
-  snprintf(url, URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx, ty);
-
-  string response = curl_get_image(url);
-
+int sdl_init(SDL_Renderer **r, SDL_Texture **t, string png_data) {
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
     fprintf(stderr, "[ERROR]: could not initialize sdl: %s\n", SDL_GetError());
     return 1;
@@ -115,7 +110,7 @@ int main(void) {
     return 1;
   }
 
-  SDL_RWops *rw = SDL_RWFromConstMem(response.ptr, response.len);
+  SDL_RWops *rw = SDL_RWFromConstMem(png_data.ptr, png_data.len);
   if (rw == NULL) {
     fprintf(stderr, "[ERROR]: could not create SDL_RWops: %s\n", SDL_GetError());
     return 1;
@@ -133,6 +128,13 @@ int main(void) {
     return 1;
   }
 
+  *r = renderer;
+  *t = texture;
+
+  return 0;
+}
+
+void sdl_event_loop() {
   SDL_Event event;
   bool quit = false;
   while (!quit) {
@@ -146,17 +148,36 @@ int main(void) {
     SDL_RenderCopy(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
   }
+}
 
-  // Cleanup
+void sdl_cleanup() {
   SDL_DestroyTexture(texture);
   SDL_DestroyRenderer(renderer);
-  SDL_DestroyWindow(window);
   IMG_Quit();
   SDL_Quit();
+}
 
-  free(response.ptr);
-  response.ptr = NULL;
-  response.len = 0;
+int main(void) {
+  const int tx = long2tilex(LNG, ZOOM); // convert longiture to tile x coordinate
+  const int ty = lat2tiley(LAT, ZOOM);  // convert latitude to tile y coordinate
+
+  char url[URL_BUF_SIZE];
+  snprintf(url, URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx, ty);
+
+  string png_data = curl_get_png_data(url);
+
+  if (sdl_init(&renderer, &texture, png_data) != 0) {
+    fprintf(stderr, "[ERROR]: could not create renderer and texture from png data\n");
+    return 1;
+  }
+
+  sdl_event_loop();
+
+  sdl_cleanup();
+
+  free(png_data.ptr);
+  png_data.ptr = NULL;
+  png_data.len = 0;
 
   return 0;
 }
