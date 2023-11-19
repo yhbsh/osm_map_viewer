@@ -3,12 +3,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-struct string {
+typedef struct {
   char *ptr;
   size_t len;
-};
+} string;
 
-void init_string(struct string *s) {
+void init_string(string *s) {
   s->len = 0;
   s->ptr = malloc(s->len + 1);
   if (s->ptr == NULL) {
@@ -18,7 +18,7 @@ void init_string(struct string *s) {
   s->ptr[0] = '\0';
 }
 
-size_t writefunc(void *ptr, size_t size, size_t nmemb, struct string *s) {
+size_t write_callback(void *ptr, size_t size, size_t nmemb, string *s) {
   size_t new_len = s->len + size * nmemb;
   s->ptr = realloc(s->ptr, new_len + 1);
   if (s->ptr == NULL) {
@@ -38,11 +38,11 @@ int main(void) {
 
   curl = curl_easy_init();
   if (curl) {
-    struct string s;
+    string s;
     init_string(&s);
 
     curl_easy_setopt(curl, CURLOPT_URL, "http://example.com");
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writefunc);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
 
     res = curl_easy_perform(curl);
@@ -58,4 +58,3 @@ int main(void) {
 
   return 0;
 }
-
