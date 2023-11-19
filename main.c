@@ -120,8 +120,6 @@ int main(void) {
     return 1;
   }
 
-  // const char *image_path = "image.png";
-
   SDL_Window *window = SDL_CreateWindow("Map Viewer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
   if (window == NULL) {
     fprintf(stderr, "[ERROR]: could not create sdl window: %s\n", SDL_GetError());
@@ -143,7 +141,6 @@ int main(void) {
     return 1;
   }
 
-  // SDL_Surface *surface = IMG_Load(image_path);
   SDL_Surface *surface = IMG_Load_RW(rw, 1); // 1 means SDL will free the RWops for us
   if (surface == NULL) {
     fprintf(stderr, "[ERROR]: could not load image: %s\n", IMG_GetError());
