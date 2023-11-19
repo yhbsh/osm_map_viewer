@@ -3,7 +3,7 @@
 
 
 ## Build
-- Make sure you have sdl2, sdl2_image installed on your system and can be found using pkg-config
+- Make sure you have libcurl(cURL), sdl2, sdl2_image installed on your system and can be found using pkg-config
 
 ```console
 $ make
