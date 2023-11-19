@@ -33,7 +33,7 @@ static void init_string(string *s) {
   s->ptr = malloc(s->len + 1);
   if (s->ptr == NULL) {
     fprintf(stderr, "malloc() failed\n");
-    exit(EXIT_FAILURE);
+    exit(1);
   }
   s->ptr[0] = '\0';
 }
@@ -47,7 +47,7 @@ static size_t write_callback(void *data, size_t size, size_t nmemb, void *user_d
 
   if (s->ptr == NULL) {
     fprintf(stderr, "realloc() failed\n");
-    exit(EXIT_FAILURE);
+    exit(1);
   }
   memcpy(s->ptr + s->len, data, real_size);
   s->ptr[new_size] = '\0';
