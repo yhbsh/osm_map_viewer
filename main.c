@@ -48,7 +48,7 @@ typedef struct {
   size_t len;
 } string;
 
-void init_string(string *s) {
+static void init_string(string *s) {
   s->len = 0;
   s->ptr = malloc(s->len + 1);
   if (s->ptr == NULL) {
@@ -58,7 +58,7 @@ void init_string(string *s) {
   s->ptr[0] = '\0';
 }
 
-size_t write_callback(void *ptr, size_t size, size_t nmemb, string *s) {
+static size_t write_callback(void *ptr, size_t size, size_t nmemb, string *s) {
   size_t new_len = s->len + size * nmemb;
   s->ptr = realloc(s->ptr, new_len + 1);
   if (s->ptr == NULL) {
@@ -72,7 +72,7 @@ size_t write_callback(void *ptr, size_t size, size_t nmemb, string *s) {
   return size * nmemb;
 }
 
-string curl_get_image(const char *url) {
+static string curl_get_image(const char *url) {
   CURL *curl = curl_easy_init();
 
   if (!curl) {
