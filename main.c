@@ -43,61 +43,71 @@ static const char *create_url(int x, int y, int z) {
   return url;
 }
 
-// Callback function for writing data
-static size_t write_callback(void *contents, size_t size, size_t nmemb, void *userp) {
-  size_t realsize = size * nmemb;
-  char **response_ptr = (char **)userp;
-  size_t response_length = *response_ptr ? strlen(*response_ptr) : 0;
+typedef struct {
+  char *ptr;
+  size_t len;
+} string;
 
-  char *new_buffer = realloc(*response_ptr, response_length + realsize + 1);
-
-  if (new_buffer == NULL) {
-    // out of memory
-    printf("not enough memory (realloc returned NULL)\n");
-    return 0;
+void init_string(string *s) {
+  s->len = 0;
+  s->ptr = malloc(s->len + 1);
+  if (s->ptr == NULL) {
+    fprintf(stderr, "malloc() failed\n");
+    exit(EXIT_FAILURE);
   }
-
-  *response_ptr = new_buffer;
-  memcpy(&((*response_ptr)[response_length]), contents, realsize);
-  (*response_ptr)[response_length + realsize] = '\0';
-
-  return realsize;
+  s->ptr[0] = '\0';
 }
 
-size_t curl_get_image(const char *url, uint8_t **response) {
-  curl_global_init(CURL_GLOBAL_DEFAULT);
+size_t write_callback(void *ptr, size_t size, size_t nmemb, string *s) {
+  size_t new_len = s->len + size * nmemb;
+  s->ptr = realloc(s->ptr, new_len + 1);
+  if (s->ptr == NULL) {
+    fprintf(stderr, "realloc() failed\n");
+    exit(EXIT_FAILURE);
+  }
+  memcpy(s->ptr + s->len, ptr, size * nmemb);
+  s->ptr[new_len] = '\0';
+  s->len = new_len;
+
+  return size * nmemb;
+}
+
+string curl_get_image(const char *url) {
   CURL *curl = curl_easy_init();
 
   if (!curl) {
-    fprintf(stderr, "[ERROR]: could not initialize curl: %s\n", strerror(errno));
+    fprintf(stderr, "[ERROR]: curl_easy_init() failed: %s\n", strerror(errno));
     exit(1);
   }
 
+  string s;
+  init_string(&s);
+
   curl_easy_setopt(curl, CURLOPT_URL, url);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
-  curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)response);
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
   curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.64.1");
 
   CURLcode code = curl_easy_perform(curl);
+
   if (code != CURLE_OK) {
-    fprintf(stderr, "[ERROR]: could not perform the request: %s\n", curl_easy_strerror(code));
+    fprintf(stderr, "[ERROR]: curl_easy_perform() failed: %s\n", curl_easy_strerror(code));
     exit(1);
   }
 
   curl_easy_cleanup(curl);
-  curl = NULL;
-  curl_global_cleanup();
 
-  return strlen((const char *)*response);
+  return s;
 }
 
 int main(void) {
-  // const int tx = long2tilex(LNG, ZOOM);
-  // const int ty = lat2tiley(LAT, ZOOM);
-  // const char *url = create_url(tx, ty, ZOOM);
+  const int tx = long2tilex(LNG, ZOOM);
+  const int ty = lat2tiley(LAT, ZOOM);
+  const char *url = create_url(tx, ty, ZOOM);
 
-  // uint8_t *response = NULL;
-  // size_t response_len = curl_get_image(url, &response);
+  string response = curl_get_image(url);
+
+  printf("response = %s", response.ptr);
 
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
     fprintf(stderr, "[ERROR]: could not initialize sdl: %s\n", SDL_GetError());
@@ -110,8 +120,7 @@ int main(void) {
     return 1;
   }
 
-  // SDL_RWops *rw = SDL_RWFromConstMem(response, response_len);
-  const char *image_path = "image.png";
+  // const char *image_path = "image.png";
 
   SDL_Window *window = SDL_CreateWindow("Map Viewer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
   if (window == NULL) {
@@ -128,9 +137,16 @@ int main(void) {
     return 1;
   }
 
-  SDL_Surface *surface = IMG_Load(image_path); // 1 means SDL will free the RWops for us
+  SDL_RWops *rw = SDL_RWFromConstMem(response.ptr, response.len);
+  if (rw == NULL) {
+    fprintf(stderr, "[ERROR]: could not create SDL_RWops: %s\n", SDL_GetError());
+    return 1;
+  }
+
+  // SDL_Surface *surface = IMG_Load(image_path);
+  SDL_Surface *surface = IMG_Load_RW(rw, 1); // 1 means SDL will free the RWops for us
   if (surface == NULL) {
-    fprintf(stderr, "[ERROR]: could not load image %s: %s\n", image_path, IMG_GetError());
+    fprintf(stderr, "[ERROR]: could not load image: %s\n", IMG_GetError());
     IMG_Quit();
     SDL_Quit();
     return 1;
@@ -138,7 +154,7 @@ int main(void) {
 
   SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, surface);
   if (texture == NULL) {
-    fprintf(stderr, "[ERROR]: could not create texture from surface %s: %s", image_path, SDL_GetError());
+    fprintf(stderr, "[ERROR]: could not create texture from surface: %s", SDL_GetError());
     return 1;
   }
 
@@ -163,8 +179,9 @@ int main(void) {
   IMG_Quit();
   SDL_Quit();
 
-  // free(response);
-  // response = NULL;
+  free(response.ptr);
+  response.ptr = NULL;
+  response.len = 0;
 
   return 0;
 }
