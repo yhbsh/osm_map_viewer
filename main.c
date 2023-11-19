@@ -38,18 +38,22 @@ static void init_string(string *s) {
   s->ptr[0] = '\0';
 }
 
-static size_t write_callback(void *ptr, size_t size, size_t nmemb, string *s) {
-  size_t new_len = s->len + size * nmemb;
-  s->ptr = realloc(s->ptr, new_len + 1);
+static size_t write_callback(void *data, size_t size, size_t nmemb, void *user_data) {
+  size_t real_size = size * nmemb;
+  string *s = (string *)user_data;
+
+  size_t new_size = s->len + real_size;
+  s->ptr = realloc(s->ptr, new_size + 1);
+
   if (s->ptr == NULL) {
     fprintf(stderr, "realloc() failed\n");
     exit(EXIT_FAILURE);
   }
-  memcpy(s->ptr + s->len, ptr, size * nmemb);
-  s->ptr[new_len] = '\0';
-  s->len = new_len;
+  memcpy(s->ptr + s->len, data, real_size);
+  s->ptr[new_size] = '\0';
+  s->len = new_size;
 
-  return size * nmemb;
+  return real_size;
 }
 
 static string curl_get_image(const char *url) {
@@ -65,7 +69,7 @@ static string curl_get_image(const char *url) {
 
   curl_easy_setopt(curl, CURLOPT_URL, url);
   curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
-  curl_easy_setopt(curl, CURLOPT_WRITEDATA, &s);
+  curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&s);
   curl_easy_setopt(curl, CURLOPT_USERAGENT, "curl/7.64.1");
 
   CURLcode code = curl_easy_perform(curl);
@@ -96,22 +100,18 @@ int main(void) {
 
   if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
     fprintf(stderr, "[ERROR]: could not initialize sdl_image: %s\n", IMG_GetError());
-    SDL_Quit();
     return 1;
   }
 
   SDL_Window *window = SDL_CreateWindow("Map Viewer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
   if (window == NULL) {
     fprintf(stderr, "[ERROR]: could not create sdl window: %s\n", SDL_GetError());
-    SDL_Quit();
     return 1;
   }
 
   SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
   if (renderer == NULL) {
     fprintf(stderr, "[ERROR]: could not create sdl renderer: %s\n", SDL_GetError());
-    SDL_DestroyWindow(window);
-    SDL_Quit();
     return 1;
   }
 
@@ -124,8 +124,6 @@ int main(void) {
   SDL_Surface *surface = IMG_Load_RW(rw, 1); // 1 means SDL will free the RWops for us
   if (surface == NULL) {
     fprintf(stderr, "[ERROR]: could not load image: %s\n", IMG_GetError());
-    IMG_Quit();
-    SDL_Quit();
     return 1;
   }
 
@@ -135,11 +133,11 @@ int main(void) {
     return 1;
   }
 
-  SDL_Event e;
+  SDL_Event event;
   bool quit = false;
   while (!quit) {
-    while (SDL_PollEvent(&e) != 0) {
-      if (e.type == SDL_QUIT) {
+    while (SDL_PollEvent(&event) != 0) {
+      if (event.type == SDL_QUIT) {
         quit = true;
       }
     }
