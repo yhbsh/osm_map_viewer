@@ -18,10 +18,7 @@
 
 static int long2tilex(double lon, int z) { return (int)(floor((lon + 180.0) / 360.0 * (1 << z))); }
 
-static int lat2tiley(double lat, int z) {
-    double latrad = lat * M_PI / 180.0;
-    return (int)(floor((1.0 - asinh(tan(latrad)) / M_PI) / 2.0 * (1 << z)));
-}
+static int lat2tiley(double lat, int z) { return (int)(floor((1.0 - asinh(tan(lat * M_PI / 180.0)) / M_PI) / 2.0 * (1 << z))); }
 
 typedef struct {
     char *ptr;
@@ -93,8 +90,7 @@ int main(void) {
 
     string png_data = curl_get_png_data(url);
 
-
-		// Initialisation
+    // Initialisation
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG);
 
@@ -103,8 +99,7 @@ int main(void) {
     SDL_RWops *rw = SDL_RWFromConstMem(png_data.ptr, png_data.len);
     SDL_Texture *texture = IMG_LoadTexture_RW(renderer, rw, 1);
 
-
-		// Event loop
+    // Event loop
     SDL_Event event;
     bool quit = false;
     while (!quit) {
@@ -114,15 +109,13 @@ int main(void) {
         SDL_RenderCopy(renderer, texture, NULL, &rect);
 
         while (SDL_PollEvent(&event) != 0) {
-            if (event.type == SDL_QUIT) {
-                quit = true;
-            }
+					quit = event.type == SDL_QUIT;
         }
 
         SDL_RenderPresent(renderer);
     }
 
-		// Cleanup
+    // Cleanup
     SDL_DestroyTexture(texture);
     SDL_DestroyRenderer(renderer);
     IMG_Quit();
