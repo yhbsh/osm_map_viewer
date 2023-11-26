@@ -10,7 +10,7 @@
 
 #define URL_BUF_SIZE 1024
 
-#define ZOOM 13
+#define ZOOM 7
 #define LAT 24.719634
 #define LNG 46.624539
 #define WIDTH 800
@@ -138,14 +138,17 @@ void sdl_event_loop() {
   SDL_Event event;
   bool quit = false;
   while (!quit) {
+    SDL_RenderClear(renderer);
+		SDL_Rect rect = {};
+		SDL_QueryTexture(texture, NULL, NULL, &rect.w, &rect.h);
+    SDL_RenderCopy(renderer, texture, NULL, &rect);
+
     while (SDL_PollEvent(&event) != 0) {
       if (event.type == SDL_QUIT) {
         quit = true;
       }
     }
 
-    SDL_RenderClear(renderer);
-    SDL_RenderCopy(renderer, texture, NULL, NULL);
     SDL_RenderPresent(renderer);
   }
 }
