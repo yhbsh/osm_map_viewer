@@ -134,24 +134,6 @@ int sdl_init(SDL_Renderer **r, SDL_Texture **t, string png_data) {
   return 0;
 }
 
-void sdl_event_loop() {
-  SDL_Event event;
-  bool quit = false;
-  while (!quit) {
-    SDL_RenderClear(renderer);
-		SDL_Rect rect = {};
-		SDL_QueryTexture(texture, NULL, NULL, &rect.w, &rect.h);
-    SDL_RenderCopy(renderer, texture, NULL, &rect);
-
-    while (SDL_PollEvent(&event) != 0) {
-      if (event.type == SDL_QUIT) {
-        quit = true;
-      }
-    }
-
-    SDL_RenderPresent(renderer);
-  }
-}
 
 void sdl_cleanup() {
   SDL_DestroyTexture(texture);
@@ -174,7 +156,22 @@ int main(void) {
     return 1;
   }
 
-  sdl_event_loop();
+  SDL_Event event;
+  bool quit = false;
+  while (!quit) {
+    SDL_RenderClear(renderer);
+		SDL_Rect rect = {};
+		SDL_QueryTexture(texture, NULL, NULL, &rect.w, &rect.h);
+    SDL_RenderCopy(renderer, texture, NULL, &rect);
+
+    while (SDL_PollEvent(&event) != 0) {
+      if (event.type == SDL_QUIT) {
+        quit = true;
+      }
+    }
+
+    SDL_RenderPresent(renderer);
+  }
 
   sdl_cleanup();
 
