@@ -10,4 +10,4 @@ run: compile
 	@./main
 
 compile: main.c
-	@clang $(CFLAGS) -o main main.c $(LIBS)
+	@clang $(CFLAGS) -O3 -o main main.c $(LIBS)
