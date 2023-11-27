@@ -21,10 +21,7 @@ SDL_Texture *texture = NULL;
 
 static int long2tilex(double lon, int z) { return (int)(floor((lon + 180.0) / 360.0 * (1 << z))); }
 
-static int lat2tiley(double lat, int z) {
-  double latrad = lat * M_PI / 180.0;
-  return (int)(floor((1.0 - asinh(tan(latrad)) / M_PI) / 2.0 * (1 << z)));
-}
+static int lat2tiley(double lat, int z) { return (int)(floor((1.0 - asinh(tan(lat * M_PI / 180.0)) / M_PI) / 2.0 * (1 << z))); }
 
 typedef struct {
   char *ptr;
