@@ -42,7 +42,7 @@ static size_t write_callback(void *data, size_t size, size_t nmemb, buffer *s) {
     return real_size;
 }
 
-static buffer curl_get_png_data(const char *url) {
+static buffer curl_tile_from_url(const char *url) {
     CURL *curl = curl_easy_init();
 
     if (!curl) {
@@ -76,7 +76,7 @@ int main(void) {
     char url[URL_BUF_SIZE];
     snprintf(url, URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx, ty);
 
-    buffer png_data = curl_get_png_data(url);
+    buffer tile_data = curl_tile_from_url(url);
 
     // Initialisation
     SDL_Init(SDL_INIT_VIDEO);
@@ -84,7 +84,7 @@ int main(void) {
 
     SDL_Window *window = SDL_CreateWindow("Map Viewer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    SDL_RWops *rw = SDL_RWFromConstMem(png_data.ptr, png_data.len);
+    SDL_RWops *rw = SDL_RWFromConstMem(tile_data.ptr, tile_data.len);
     SDL_Texture *texture = IMG_LoadTexture_RW(renderer, rw, 1);
 
     // Event loop
@@ -109,9 +109,9 @@ int main(void) {
     IMG_Quit();
     SDL_Quit();
 
-    free(png_data.ptr);
-    png_data.ptr = NULL;
-    png_data.len = 0;
+    free(tile_data.ptr);
+    tile_data.ptr = NULL;
+    tile_data.len = 0;
 
     return 0;
 }
