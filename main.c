@@ -109,7 +109,7 @@ int main(void) {
         SDL_RenderCopy(renderer, texture, NULL, &rect);
 
         while (SDL_PollEvent(&event) != 0) {
-					quit = event.type == SDL_QUIT;
+            quit = event.type == SDL_QUIT;
         }
 
         SDL_RenderPresent(renderer);
