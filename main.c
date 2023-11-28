@@ -23,21 +23,10 @@ static int lat2tiley(double lat, int z) { return (int)(floor((1.0 - asinh(tan(la
 typedef struct {
     char *ptr;
     size_t len;
-} string;
+} buffer;
 
-static void init_string(string *s) {
-    s->len = 0;
-    s->ptr = malloc(s->len + 1);
-    if (s->ptr == NULL) {
-        fprintf(stderr, "malloc() failed\n");
-        exit(1);
-    }
-    s->ptr[0] = '\0';
-}
-
-static size_t write_callback(void *data, size_t size, size_t nmemb, void *user_data) {
+static size_t write_callback(void *data, size_t size, size_t nmemb, buffer *s) {
     size_t real_size = size * nmemb;
-    string *s = (string *)user_data;
 
     size_t new_size = s->len + real_size;
     s->ptr = realloc(s->ptr, new_size + 1);
@@ -53,7 +42,7 @@ static size_t write_callback(void *data, size_t size, size_t nmemb, void *user_d
     return real_size;
 }
 
-static string curl_get_png_data(const char *url) {
+static buffer curl_get_png_data(const char *url) {
     CURL *curl = curl_easy_init();
 
     if (!curl) {
@@ -61,8 +50,7 @@ static string curl_get_png_data(const char *url) {
         exit(1);
     }
 
-    string s;
-    init_string(&s);
+    buffer s = {0};
 
     curl_easy_setopt(curl, CURLOPT_URL, url);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
@@ -88,7 +76,7 @@ int main(void) {
     char url[URL_BUF_SIZE];
     snprintf(url, URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx, ty);
 
-    string png_data = curl_get_png_data(url);
+    buffer png_data = curl_get_png_data(url);
 
     // Initialisation
     SDL_Init(SDL_INIT_VIDEO);
