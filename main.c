@@ -74,9 +74,12 @@ int main(void) {
     const int ty = lat2tiley(LAT, ZOOM);  // convert latitude to tile y coordinate
 
     char url[URL_BUF_SIZE];
+    char url2[URL_BUF_SIZE];
     snprintf(url, URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx, ty);
+    snprintf(url2, URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx + 20, ty + 20);
 
     buffer tile_data = curl_tile_from_url(url);
+    buffer tile_data2 = curl_tile_from_url(url2);
 
     // Initialisation
     SDL_Init(SDL_INIT_VIDEO);
@@ -85,16 +88,25 @@ int main(void) {
     SDL_Window *window = SDL_CreateWindow("Map Viewer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     SDL_RWops *rw = SDL_RWFromConstMem(tile_data.ptr, tile_data.len);
+    SDL_RWops *rw2 = SDL_RWFromConstMem(tile_data2.ptr, tile_data2.len);
     SDL_Texture *texture = IMG_LoadTexture_RW(renderer, rw, 1);
+    SDL_Texture *texture2 = IMG_LoadTexture_RW(renderer, rw2, 1);
 
     // Event loop
     SDL_Event event;
     bool quit = false;
+
+    SDL_Rect rect = {};
+    SDL_Rect rect2 = {};
+
     while (!quit) {
         SDL_RenderClear(renderer);
-        SDL_Rect rect = {};
         SDL_QueryTexture(texture, NULL, NULL, &rect.w, &rect.h);
+        SDL_QueryTexture(texture2, NULL, NULL, &rect2.w, &rect2.h);
+        rect2.x += rect.w;
+        rect2.y += rect.h;
         SDL_RenderCopy(renderer, texture, NULL, &rect);
+        SDL_RenderCopy(renderer, texture2, NULL, &rect2);
 
         while (SDL_PollEvent(&event) != 0) {
             quit = event.type == SDL_QUIT;
