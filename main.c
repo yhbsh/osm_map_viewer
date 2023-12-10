@@ -1,3 +1,4 @@
+#include "SDL2/SDL_rwops.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <curl/curl.h>
@@ -6,6 +7,7 @@
 #include <stdlib.h>
 
 #define URL_BUF_SIZE 1024
+#define TILE_COUNT 9
 
 #define ZOOM 13
 #define LAT 24.719634
@@ -20,6 +22,11 @@ typedef struct {
     char *ptr;
     size_t len;
 } buffer;
+
+typedef struct {
+    SDL_Texture *texture;
+    SDL_Rect rect;
+} Tile;
 
 static size_t write_callback(void *data, size_t size, size_t nmemb, void *user_data) {
     size_t real_size = size * nmemb;
@@ -70,17 +77,33 @@ int main(void) {
     const int tx = long2tilex(LNG, ZOOM); // convert longiture to tile x coordinate
     const int ty = lat2tiley(LAT, ZOOM);  // convert latitude to tile y coordinate
 
-    char tile_url[URL_BUF_SIZE];
-    snprintf(tile_url, URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx, ty);
+    char tiles_urls[TILE_COUNT][URL_BUF_SIZE];
+    snprintf(tiles_urls[0], URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx, ty);
+    snprintf(tiles_urls[1], URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx + 1, ty);
+    snprintf(tiles_urls[2], URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx - 1, ty);
+    snprintf(tiles_urls[3], URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx, ty + 1);
+    snprintf(tiles_urls[4], URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx, ty - 1);
+    snprintf(tiles_urls[5], URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx + 1, ty + 1);
+    snprintf(tiles_urls[6], URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx - 1, ty + 1);
+    snprintf(tiles_urls[7], URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx + 1, ty - 1);
+    snprintf(tiles_urls[8], URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx - 1, ty - 1);
 
-    buffer tile_buffer = tile_from_url(tile_url);
+    buffer tiles[TILE_COUNT];
+    for (int i = 0; i < TILE_COUNT; i++) {
+        tiles[i] = tile_from_url(tiles_urls[i]);
+    }
 
     SDL_Init(SDL_INIT_VIDEO);
     IMG_Init(IMG_INIT_PNG);
     SDL_Window *window = SDL_CreateWindow("Map Viewer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    SDL_RWops *rw = SDL_RWFromConstMem(tile_buffer.ptr, tile_buffer.len);
-    SDL_Texture *texture = IMG_LoadTexture_RW(renderer, rw, 0);
+
+    SDL_Texture *textures[TILE_COUNT];
+    SDL_RWops *rw;
+    for (int i = 0; i < TILE_COUNT; i++) {
+        rw = SDL_RWFromConstMem(tiles[i].ptr, tiles[i].len);
+        textures[i] = IMG_LoadTexture_RW(renderer, rw, 0);
+    }
 
     SDL_Event event;
     bool quit = false;
@@ -89,35 +112,7 @@ int main(void) {
         SDL_RenderClear(renderer);
 
         SDL_Rect rect = {.w = WIDTH / 3, .h = HEIGHT / 3};
-        // SDL_QueryTexture(texture, NULL, NULL, &rect.w, &rect.h);
-
-        SDL_RenderCopy(renderer, texture, NULL, &rect);
-
-        rect.x += rect.w;
-        SDL_RenderCopy(renderer, texture, NULL, &rect);
-
-        rect.x += rect.w;
-        SDL_RenderCopy(renderer, texture, NULL, &rect);
-
-        rect.x = 0;
-        rect.y += rect.h;
-        SDL_RenderCopy(renderer, texture, NULL, &rect);
-
-        rect.x += rect.w;
-        SDL_RenderCopy(renderer, texture, NULL, &rect);
-
-        rect.x += rect.w;
-        SDL_RenderCopy(renderer, texture, NULL, &rect);
-
-        rect.x = 0;
-        rect.y += rect.h;
-        SDL_RenderCopy(renderer, texture, NULL, &rect);
-
-        rect.x += rect.w;
-        SDL_RenderCopy(renderer, texture, NULL, &rect);
-
-        rect.x += rect.w;
-        SDL_RenderCopy(renderer, texture, NULL, &rect);
+        SDL_RenderCopy(renderer, textures[0], NULL, &rect);
 
         while (SDL_PollEvent(&event) != 0) {
             if (event.type == SDL_QUIT) {
@@ -128,14 +123,10 @@ int main(void) {
         SDL_RenderPresent(renderer);
     }
 
-    SDL_DestroyTexture(texture);
+    SDL_DestroyTexture(textures[0]);
     SDL_DestroyRenderer(renderer);
     IMG_Quit();
     SDL_Quit();
-
-    free(tile_buffer.ptr);
-    tile_buffer.ptr = NULL;
-    tile_buffer.len = 0;
 
     return 0;
 }
