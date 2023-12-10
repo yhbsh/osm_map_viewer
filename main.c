@@ -9,13 +9,13 @@
 #define URL_BUF_SIZE 1024
 #define TILE_COUNT 9
 
-#define ZOOM 13
-#define LAT 24.719634
-#define LNG 46.624539
+#define ZOOM 12
+#define LNG -0.6441
+#define LAT 35.6982
 #define WIDTH 800
 #define HEIGHT 800
 
-static int long2tilex(double lon, int z) { return (int)(floor((lon + 180.0) / 360.0 * (1 << z))); }
+static int lng2tilex(double lon, int z) { return (int)(floor((lon + 180.0) / 360.0 * (1 << z))); }
 static int lat2tiley(double lat, int z) { return (int)(floor((1.0 - asinh(tan(lat * M_PI / 180.0)) / M_PI) / 2.0 * (1 << z))); }
 
 typedef struct {
@@ -74,8 +74,8 @@ static buffer tile_from_url(const char *url) {
 }
 
 int main(void) {
-    const int tx = long2tilex(LNG, ZOOM); // convert longiture to tile x coordinate
-    const int ty = lat2tiley(LAT, ZOOM);  // convert latitude to tile y coordinate
+    const int tx = lng2tilex(LNG, ZOOM); // convert longiture to tile x coordinate
+    const int ty = lat2tiley(LAT, ZOOM); // convert latitude to tile y coordinate
 
     char tiles_urls[TILE_COUNT][URL_BUF_SIZE];
     snprintf(tiles_urls[0], URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx, ty);
