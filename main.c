@@ -88,9 +88,9 @@ int main(void) {
     snprintf(tiles_urls[7], URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx + 1, ty - 1);
     snprintf(tiles_urls[8], URL_BUF_SIZE, "https://tile.openstreetmap.org/%d/%d/%d.png", ZOOM, tx - 1, ty - 1);
 
-    buffer tiles[TILE_COUNT];
+    buffer buffers[TILE_COUNT];
     for (int i = 0; i < TILE_COUNT; i++) {
-        tiles[i] = tile_from_url(tiles_urls[i]);
+        buffers[i] = tile_from_url(tiles_urls[i]);
     }
 
     SDL_Init(SDL_INIT_VIDEO);
@@ -101,8 +101,27 @@ int main(void) {
     SDL_Texture *textures[TILE_COUNT];
     SDL_RWops *rw;
     for (int i = 0; i < TILE_COUNT; i++) {
-        rw = SDL_RWFromConstMem(tiles[i].ptr, tiles[i].len);
+        rw = SDL_RWFromConstMem(buffers[i].ptr, buffers[i].len);
         textures[i] = IMG_LoadTexture_RW(renderer, rw, 0);
+    }
+
+    Tile tiles[TILE_COUNT];
+    int tileWidth = WIDTH / 3;
+    int tileHeight = HEIGHT / 3;
+
+    // Initialize the SDL_Rects for each tile
+    for (int i = 0; i < TILE_COUNT; ++i) {
+        tiles[i].texture = textures[i];
+        tiles[i].rect.w = tileWidth;
+        tiles[i].rect.h = tileHeight;
+
+        // Determine the position of each tile
+        // The tiles are ordered as follows: center, right, left, down, up, down-right, down-left, up-right, up-left
+        int dx[9] = {0, 1, -1, 0, 0, 1, -1, 1, -1};
+        int dy[9] = {0, 0, 0, 1, -1, 1, 1, -1, -1};
+
+        tiles[i].rect.x = (dx[i] + 1) * tileWidth;
+        tiles[i].rect.y = (dy[i] + 1) * tileHeight;
     }
 
     SDL_Event event;
@@ -111,8 +130,10 @@ int main(void) {
     while (!quit) {
         SDL_RenderClear(renderer);
 
-        SDL_Rect rect = {.w = WIDTH / 3, .h = HEIGHT / 3};
-        SDL_RenderCopy(renderer, textures[0], NULL, &rect);
+        // Render all tiles
+        for (int i = 0; i < TILE_COUNT; ++i) {
+            SDL_RenderCopy(renderer, tiles[i].texture, NULL, &tiles[i].rect);
+        }
 
         while (SDL_PollEvent(&event) != 0) {
             if (event.type == SDL_QUIT) {
@@ -123,7 +144,11 @@ int main(void) {
         SDL_RenderPresent(renderer);
     }
 
-    SDL_DestroyTexture(textures[0]);
+    // Cleanup textures and buffers
+    for (int i = 0; i < TILE_COUNT; ++i) {
+        SDL_DestroyTexture(textures[i]);
+        free(buffers[i].ptr);
+    }
     SDL_DestroyRenderer(renderer);
     IMG_Quit();
     SDL_Quit();
