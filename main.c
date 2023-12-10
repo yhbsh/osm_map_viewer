@@ -1,13 +1,9 @@
-#include "SDL2/SDL_render.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <curl/curl.h>
 #include <errno.h>
-#include <math.h>
 #include <stdbool.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 
 #define URL_BUF_SIZE 1024
 
@@ -89,14 +85,17 @@ int main(void) {
     SDL_Event event;
     bool quit = false;
     while (!quit) {
+        SDL_RenderClear(renderer);
+        SDL_Rect rect = {};
+        SDL_QueryTexture(texture, NULL, NULL, &rect.w, &rect.h);
+        SDL_RenderCopy(renderer, texture, NULL, &rect);
+
         while (SDL_PollEvent(&event) != 0) {
             if (event.type == SDL_QUIT) {
                 quit = true;
             }
         }
 
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, NULL, NULL);
         SDL_RenderPresent(renderer);
     }
 
