@@ -80,14 +80,43 @@ int main(void) {
     SDL_Window *window = SDL_CreateWindow("Map Viewer", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, WIDTH, HEIGHT, SDL_WINDOW_SHOWN);
     SDL_Renderer *renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
     SDL_RWops *rw = SDL_RWFromConstMem(tile_buffer.ptr, tile_buffer.len);
-    SDL_Texture *texture = IMG_LoadTexture_RW(renderer, rw, 1);
+    SDL_Texture *texture = IMG_LoadTexture_RW(renderer, rw, 0);
 
     SDL_Event event;
     bool quit = false;
+
     while (!quit) {
         SDL_RenderClear(renderer);
-        SDL_Rect rect = {};
-        SDL_QueryTexture(texture, NULL, NULL, &rect.w, &rect.h);
+
+        SDL_Rect rect = {.w = WIDTH / 3, .h = HEIGHT / 3};
+        // SDL_QueryTexture(texture, NULL, NULL, &rect.w, &rect.h);
+
+        SDL_RenderCopy(renderer, texture, NULL, &rect);
+
+        rect.x += rect.w;
+        SDL_RenderCopy(renderer, texture, NULL, &rect);
+
+        rect.x += rect.w;
+        SDL_RenderCopy(renderer, texture, NULL, &rect);
+
+        rect.x = 0;
+        rect.y += rect.h;
+        SDL_RenderCopy(renderer, texture, NULL, &rect);
+
+        rect.x += rect.w;
+        SDL_RenderCopy(renderer, texture, NULL, &rect);
+
+        rect.x += rect.w;
+        SDL_RenderCopy(renderer, texture, NULL, &rect);
+
+        rect.x = 0;
+        rect.y += rect.h;
+        SDL_RenderCopy(renderer, texture, NULL, &rect);
+
+        rect.x += rect.w;
+        SDL_RenderCopy(renderer, texture, NULL, &rect);
+
+        rect.x += rect.w;
         SDL_RenderCopy(renderer, texture, NULL, &rect);
 
         while (SDL_PollEvent(&event) != 0) {
