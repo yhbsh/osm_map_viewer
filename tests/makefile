@@ -1,13 +1,13 @@
-all: libcurl url_construct camera_view sdl2
+all: libcurl_test url_construct latlng_conv
 
-libcurl: libcurl_test.c
-	clang -o bin/libcurl libcurl_test.c -lcurl
+clean: bin/*
+	rm -f bin/*
 
-url_construct: url_construct_test.c
-	clang -o bin/url_construct url_construct_test.c
+libcurl_test: libcurl_test.c
+	clang -o bin/libcurl_test libcurl_test.c -lcurl
 
-camera_view: camera_view_test.c
-	clang -I$(INC_PATH) -o bin/camera_view camera_view_test.c -L$(LIB_PATH) -lsdl2 -lsdl2_image
+url_construct: url_construct.c
+	clang -o bin/url_construct url_construct.c
 
-sdl2: sdl2_test.c
-	clang -I$(INC_PATH) -o bin/sdl2 sdl2_test.c -L$(LIB_PATH) -lsdl2
+latlng_conv: latlng_conv.c
+	clang -o bin/latlng_conv latlng_conv.c
